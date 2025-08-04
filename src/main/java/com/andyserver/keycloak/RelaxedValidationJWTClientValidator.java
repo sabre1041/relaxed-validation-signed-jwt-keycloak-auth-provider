@@ -104,14 +104,6 @@ public class RelaxedValidationJWTClientValidator {
             throw new RuntimeException("Can't identify client. Subject missing on JWT token");
         }
 
-
-        // Disable Issuer / Subject Verification
-        /*
-        if (!clientId.equals(token.getIssuer())) {
-            throw new RuntimeException("Issuer mismatch. The issuer should match the subject");
-        }
-        */
-
         String clientIdParam = params.getFirst(OAuth2Constants.CLIENT_ID);
         if (clientIdParam != null && !clientIdParam.equals(clientId)) {
             throw new RuntimeException("client_id parameter not matching with client from JWT token");
@@ -134,6 +126,14 @@ public class RelaxedValidationJWTClientValidator {
         if (!clientAuthenticatorProviderId.equals(client.getClientAuthenticatorType())) {
             context.failure(AuthenticationFlowError.INVALID_CLIENT_CREDENTIALS, null);
             return false;
+        }
+
+        // Disable Issuer / Subject Verification
+        // Note: This was moved after the client retrieval/verification
+        if(isVerifyIssuerSubjectMatch()) {
+            if (!clientId.equals(token.getIssuer())) {
+                throw new RuntimeException("Issuer mismatch. The issuer should match the subject");
+            }
         }
 
         return true;
@@ -183,11 +183,11 @@ public class RelaxedValidationJWTClientValidator {
         }
 
         // Disable ID Token Verification
-        /*
-        if (token.getId() == null) {
-            throw new RuntimeException("Missing ID on the token");
+        if(isVerifyTokenReuse()) {
+            if (token.getId() == null) {
+                throw new RuntimeException("Missing ID on the token");
+            }
         }
-        */
     }
 
     private long calculateLifespanInSeconds()  {
@@ -231,6 +231,11 @@ public class RelaxedValidationJWTClientValidator {
     public void validateTokenReuse() {
         if (token == null) throw new IllegalStateException("Incorrect usage. Variable 'token' is null. Need to read token first before validateToken reuse");
         if (client == null) throw new IllegalStateException("Incorrect usage. Variable 'client' is null. Need to validate client first before validateToken reuse");
+
+        // Skip performing verification
+        if(!isVerifyTokenReuse()) {
+            return;
+        }
 
         SingleUseObjectProvider singleUseCache = context.getSession().singleUseObjects();
         long lifespanInSecs = calculateLifespanInSeconds();
@@ -306,4 +311,13 @@ public class RelaxedValidationJWTClientValidator {
         MediaType mediaType = request.getHttpHeaders().getMediaType();
         return mediaType != null && mediaType.isCompatible(MediaType.APPLICATION_FORM_URLENCODED_TYPE);
     }
+
+    private boolean isVerifyTokenReuse() {
+        return Boolean.parseBoolean(client.getAttribute(RelaxedValidationJWTClientAuthenticator.VERIFY_TOKEN_REUSE));
+    }
+
+    private boolean isVerifyIssuerSubjectMatch() {
+        return Boolean.parseBoolean(client.getAttribute(RelaxedValidationJWTClientAuthenticator.VERIFY_ISSUER_SUBJECT_MATCH));
+    }
+
 }

@@ -3,7 +3,6 @@ package com.andyserver.keycloak;
 import java.security.PublicKey;
 import java.util.function.BiConsumer;
 
-import org.jboss.logging.Logger;
 import org.keycloak.OAuthErrorException;
 import org.keycloak.authentication.AuthenticationFlowError;
 import org.keycloak.authentication.ClientAuthenticationFlowContext;
@@ -23,6 +22,8 @@ import jakarta.ws.rs.core.Response;
 public class RelaxedValidationJWTClientAuthenticator extends JWTClientAuthenticator {
 
     private final String providerId;
+    public static final String VERIFY_TOKEN_REUSE = "verifyTokenReuse";
+    public static final String VERIFY_ISSUER_SUBJECT_MATCH = "verifyIssuerSubjectMatch";
 
     BiConsumer<JOSE, ClientModel> DEFAULT_VALIDATOR = (jwt, client) -> {
         String rawAlgorithm = jwt.getHeader().getRawAlgorithm();
@@ -35,7 +36,6 @@ public class RelaxedValidationJWTClientAuthenticator extends JWTClientAuthentica
     public RelaxedValidationJWTClientAuthenticator(String providerId) {
         this.providerId = providerId;
     }
-
 
     @Override
     public void authenticateClient(ClientAuthenticationFlowContext context) {
@@ -86,10 +86,7 @@ public class RelaxedValidationJWTClientAuthenticator extends JWTClientAuthentica
 
             validator.validateToken();
             
-            // Disable verification for Token Reuse
-            /*
             validator.validateTokenReuse();
-            */
 
             context.success();
         } catch (Exception e) {

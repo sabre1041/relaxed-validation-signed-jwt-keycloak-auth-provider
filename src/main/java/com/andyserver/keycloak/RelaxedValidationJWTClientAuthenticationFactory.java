@@ -18,6 +18,7 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.protocol.oidc.OIDCConfigAttributes;
 import org.keycloak.protocol.oidc.OIDCLoginProtocol;
 import org.keycloak.provider.ProviderConfigProperty;
+import org.keycloak.provider.ProviderConfigurationBuilder;
 
 public class RelaxedValidationJWTClientAuthenticationFactory implements ClientAuthenticatorFactory {
 
@@ -72,7 +73,20 @@ public class RelaxedValidationJWTClientAuthenticationFactory implements ClientAu
 
     @Override
     public List<ProviderConfigProperty> getConfigProperties() {
-        return new LinkedList<>();
+		return ProviderConfigurationBuilder.create()
+				.property()
+				.name(RelaxedValidationJWTClientAuthenticator.VERIFY_ISSUER_SUBJECT_MATCH)
+				.type(ProviderConfigProperty.BOOLEAN_TYPE)
+				.label("Verify Issuer and Subject Match")
+				.helpText("Verifies Issuer and Subject of the JWT Match")
+			.add()			
+				.property()
+				.name(RelaxedValidationJWTClientAuthenticator.VERIFY_TOKEN_REUSE)
+				.type(ProviderConfigProperty.BOOLEAN_TYPE)
+				.label("Validate Against Token Reuse")
+				.helpText("Verifies JWT Has Not Been Used by Another Authenticating Client")
+			.add()
+		.build();
     }
 
     @Override
