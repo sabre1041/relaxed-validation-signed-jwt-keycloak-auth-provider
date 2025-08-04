@@ -29,7 +29,6 @@ import org.keycloak.protocol.oidc.par.endpoints.ParEndpoint;
 import org.keycloak.representations.JsonWebToken;
 import org.keycloak.services.Urls;
 
-
 public class RelaxedValidationJWTClientValidator {
 
     private static final Logger logger = Logger.getLogger(RelaxedValidationJWTClientValidator.class);
@@ -47,7 +46,8 @@ public class RelaxedValidationJWTClientValidator {
 
     private static final int ALLOWED_CLOCK_SKEW = 15; // sec
 
-    public RelaxedValidationJWTClientValidator(ClientAuthenticationFlowContext context, String clientAuthenticatorProviderId) {
+    public RelaxedValidationJWTClientValidator(ClientAuthenticationFlowContext context,
+            String clientAuthenticatorProviderId) {
         this.context = context;
         this.realm = context.getRealm();
         this.currentTime = Time.currentTime();
@@ -55,9 +55,12 @@ public class RelaxedValidationJWTClientValidator {
     }
 
     public boolean clientAssertionParametersValidation() {
-        //KEYCLOAK-19461: Needed for quarkus resteasy implementation throws exception when called with mediaType authentication/json in OpenShiftTokenReviewEndpoint
-        if(!isFormDataRequest(context.getHttpRequest())) {
-            Response challengeResponse = ClientAuthUtil.errorResponse(Response.Status.BAD_REQUEST.getStatusCode(), "invalid_client", "Parameter client_assertion_type is missing");
+        // KEYCLOAK-19461: Needed for quarkus resteasy implementation throws exception
+        // when called with mediaType authentication/json in
+        // OpenShiftTokenReviewEndpoint
+        if (!isFormDataRequest(context.getHttpRequest())) {
+            Response challengeResponse = ClientAuthUtil.errorResponse(Response.Status.BAD_REQUEST.getStatusCode(),
+                    "invalid_client", "Parameter client_assertion_type is missing");
             context.challenge(challengeResponse);
             return false;
         }
@@ -68,20 +71,24 @@ public class RelaxedValidationJWTClientValidator {
         clientAssertion = params.getFirst(OAuth2Constants.CLIENT_ASSERTION);
 
         if (clientAssertionType == null) {
-            Response challengeResponse = ClientAuthUtil.errorResponse(Response.Status.BAD_REQUEST.getStatusCode(), "invalid_client", "Parameter client_assertion_type is missing");
+            Response challengeResponse = ClientAuthUtil.errorResponse(Response.Status.BAD_REQUEST.getStatusCode(),
+                    "invalid_client", "Parameter client_assertion_type is missing");
             context.challenge(challengeResponse);
             return false;
         }
 
         if (!clientAssertionType.equals(OAuth2Constants.CLIENT_ASSERTION_TYPE_JWT)) {
-            Response challengeResponse = ClientAuthUtil.errorResponse(Response.Status.BAD_REQUEST.getStatusCode(), "invalid_client", "Parameter client_assertion_type has value '"
-                    + clientAssertionType + "' but expected is '" + OAuth2Constants.CLIENT_ASSERTION_TYPE_JWT + "'");
+            Response challengeResponse = ClientAuthUtil.errorResponse(Response.Status.BAD_REQUEST.getStatusCode(),
+                    "invalid_client", "Parameter client_assertion_type has value '"
+                            + clientAssertionType + "' but expected is '" + OAuth2Constants.CLIENT_ASSERTION_TYPE_JWT
+                            + "'");
             context.challenge(challengeResponse);
             return false;
         }
 
         if (clientAssertion == null) {
-            Response challengeResponse = ClientAuthUtil.errorResponse(Response.Status.BAD_REQUEST.getStatusCode(), "invalid_client", "client_assertion parameter missing");
+            Response challengeResponse = ClientAuthUtil.errorResponse(Response.Status.BAD_REQUEST.getStatusCode(),
+                    "invalid_client", "client_assertion parameter missing");
             context.failure(AuthenticationFlowError.INVALID_CLIENT_CREDENTIALS, challengeResponse);
             return false;
         }
@@ -90,14 +97,18 @@ public class RelaxedValidationJWTClientValidator {
     }
 
     public void readJws() throws JWSInputException {
-        if (clientAssertion == null) throw new IllegalStateException("Incorrect usage. Variable 'clientAssertion' is null. Need to validate clientAssertion first before read JWS");
+        if (clientAssertion == null)
+            throw new IllegalStateException(
+                    "Incorrect usage. Variable 'clientAssertion' is null. Need to validate clientAssertion first before read JWS");
 
         jws = new JWSInput(clientAssertion);
         token = jws.readJsonContent(JsonWebToken.class);
     }
 
     public boolean validateClient() {
-        if (token == null) throw new IllegalStateException("Incorrect usage. Variable 'token' is null. Need to read JWS first before validateClient");
+        if (token == null)
+            throw new IllegalStateException(
+                    "Incorrect usage. Variable 'token' is null. Need to read JWS first before validateClient");
 
         String clientId = token.getSubject();
         if (clientId == null) {
@@ -130,7 +141,7 @@ public class RelaxedValidationJWTClientValidator {
 
         // Disable Issuer / Subject Verification
         // Note: This was moved after the client retrieval/verification
-        if(isVerifyIssuerSubjectMatch()) {
+        if (isVerifyIssuerSubjectMatch()) {
             if (!clientId.equals(token.getIssuer())) {
                 throw new RuntimeException("Issuer mismatch. The issuer should match the subject");
             }
@@ -140,19 +151,26 @@ public class RelaxedValidationJWTClientValidator {
     }
 
     public boolean validateSignatureAlgorithm() {
-        if (jws == null) throw new IllegalStateException("Incorrect usage. Variable 'jws' is null. Need to read token first before validate signature algorithm");
-        if (client == null) throw new IllegalStateException("Incorrect usage. Variable 'client' is null. Need to validate client first before validate signature algorithm");
+        if (jws == null)
+            throw new IllegalStateException(
+                    "Incorrect usage. Variable 'jws' is null. Need to read token first before validate signature algorithm");
+        if (client == null)
+            throw new IllegalStateException(
+                    "Incorrect usage. Variable 'client' is null. Need to validate client first before validate signature algorithm");
 
-        String expectedSignatureAlg = OIDCAdvancedConfigWrapper.fromClientModel(client).getTokenEndpointAuthSigningAlg();
+        String expectedSignatureAlg = OIDCAdvancedConfigWrapper.fromClientModel(client)
+                .getTokenEndpointAuthSigningAlg();
         if (jws.getHeader().getAlgorithm() == null || jws.getHeader().getAlgorithm().name() == null) {
-            Response challengeResponse = ClientAuthUtil.errorResponse(Response.Status.BAD_REQUEST.getStatusCode(), "invalid_client", "invalid signature algorithm");
+            Response challengeResponse = ClientAuthUtil.errorResponse(Response.Status.BAD_REQUEST.getStatusCode(),
+                    "invalid_client", "invalid signature algorithm");
             context.challenge(challengeResponse);
             return false;
         }
 
         String actualSignatureAlg = jws.getHeader().getAlgorithm().name();
         if (expectedSignatureAlg != null && !expectedSignatureAlg.equals(actualSignatureAlg)) {
-            Response challengeResponse = ClientAuthUtil.errorResponse(Response.Status.BAD_REQUEST.getStatusCode(), "invalid_client", "invalid signature algorithm");
+            Response challengeResponse = ClientAuthUtil.errorResponse(Response.Status.BAD_REQUEST.getStatusCode(),
+                    "invalid_client", "invalid signature algorithm");
             context.challenge(challengeResponse);
             return false;
         }
@@ -161,7 +179,9 @@ public class RelaxedValidationJWTClientValidator {
     }
 
     public void validateToken() {
-        if (token == null) throw new IllegalStateException("Incorrect usage. Variable 'token' is null. Need to read token first before validateToken");
+        if (token == null)
+            throw new IllegalStateException(
+                    "Incorrect usage. Variable 'token' is null. Need to read token first before validateToken");
 
         if (!token.isActive(ALLOWED_CLOCK_SKEW)) {
             throw new RuntimeException("Token is not active");
@@ -171,33 +191,44 @@ public class RelaxedValidationJWTClientValidator {
             throw new RuntimeException("Token cannot be validated. Neither the exp nor the iat claim are present.");
         }
 
-        // KEYCLOAK-2986, token-timeout or token-expiration in keycloak.json might not be used
+        // KEYCLOAK-2986, token-timeout or token-expiration in keycloak.json might not
+        // be used
         if (token.getExp() == null || token.getExp() <= 0) { // in case of "exp" not exist
-            if (token.getIat() + ALLOWED_CLOCK_SKEW + 10 < currentTime) { // consider "exp" = 10, client's clock delays from Keycloak's clock
+            if (token.getIat() + ALLOWED_CLOCK_SKEW + 10 < currentTime) { // consider "exp" = 10, client's clock delays
+                                                                          // from Keycloak's clock
                 throw new RuntimeException("Token is not active");
             }
         } else {
-            if ((token.getIat() != null && token.getIat() > 0) && token.getIat() - ALLOWED_CLOCK_SKEW > currentTime) { // consider client's clock is ahead from Keycloak's clock
+            if ((token.getIat() != null && token.getIat() > 0) && token.getIat() - ALLOWED_CLOCK_SKEW > currentTime) { // consider
+                                                                                                                       // client's
+                                                                                                                       // clock
+                                                                                                                       // is
+                                                                                                                       // ahead
+                                                                                                                       // from
+                                                                                                                       // Keycloak's
+                                                                                                                       // clock
                 throw new RuntimeException("Token was issued in the future");
             }
         }
 
         // Disable ID Token Verification
-        if(isVerifyTokenReuse()) {
+        if (isVerifyTokenReuse()) {
             if (token.getId() == null) {
                 throw new RuntimeException("Missing ID on the token");
             }
         }
     }
 
-    private long calculateLifespanInSeconds()  {
+    private long calculateLifespanInSeconds() {
         if ((token.getExp() == null || token.getExp() <= 0) && (token.getIat() == null || token.getIat() <= 0)) {
             throw new RuntimeException("Token cannot be validated. Neither the exp nor the iat claim are present.");
         }
 
-        // rfc7523 marks exp as required and iat as optional: https://datatracker.ietf.org/doc/html/rfc7523#section-3
+        // rfc7523 marks exp as required and iat as optional:
+        // https://datatracker.ietf.org/doc/html/rfc7523#section-3
         if (token.getExp() == null || token.getExp() <= 0) {
-            // exp not present but iat present, just allow a short period of time from iat (10s)
+            // exp not present but iat present, just allow a short period of time from iat
+            // (10s)
             final long lifespan = token.getIat() + ALLOWED_CLOCK_SKEW + 10 - currentTime;
             if (lifespan <= 0) {
                 throw new RuntimeException("Token is not active");
@@ -208,11 +239,13 @@ public class RelaxedValidationJWTClientValidator {
             final int maxExp = OIDCAdvancedConfigWrapper.fromClientModel(client).getTokenEndpointAuthSigningMaxExp();
             final long lifespan = token.getExp() - currentTime;
             if (lifespan > maxExp) {
-                throw new RuntimeException("Token expiration is too far in the future and iat claim not present in token");
+                throw new RuntimeException(
+                        "Token expiration is too far in the future and iat claim not present in token");
             }
             return lifespan;
         } else {
-            // both iat and exp present, the token is just allowed to be used max-age as much
+            // both iat and exp present, the token is just allowed to be used max-age as
+            // much
             if (token.getIat() - ALLOWED_CLOCK_SKEW > currentTime) {
                 throw new RuntimeException("Token was issued in the future");
             }
@@ -229,21 +262,27 @@ public class RelaxedValidationJWTClientValidator {
     }
 
     public void validateTokenReuse() {
-        if (token == null) throw new IllegalStateException("Incorrect usage. Variable 'token' is null. Need to read token first before validateToken reuse");
-        if (client == null) throw new IllegalStateException("Incorrect usage. Variable 'client' is null. Need to validate client first before validateToken reuse");
+        if (token == null)
+            throw new IllegalStateException(
+                    "Incorrect usage. Variable 'token' is null. Need to read token first before validateToken reuse");
+        if (client == null)
+            throw new IllegalStateException(
+                    "Incorrect usage. Variable 'client' is null. Need to validate client first before validateToken reuse");
 
         // Skip performing verification
-        if(!isVerifyTokenReuse()) {
+        if (!isVerifyTokenReuse()) {
             return;
         }
 
         SingleUseObjectProvider singleUseCache = context.getSession().singleUseObjects();
         long lifespanInSecs = calculateLifespanInSeconds();
         if (singleUseCache.putIfAbsent(token.getId(), lifespanInSecs)) {
-            logger.tracef("Added token '%s' to single-use cache. Lifespan: %d seconds, client: %s", token.getId(), lifespanInSecs, client.getClientId());
+            logger.tracef("Added token '%s' to single-use cache. Lifespan: %d seconds, client: %s", token.getId(),
+                    lifespanInSecs, client.getClientId());
 
         } else {
-            logger.warnf("Token '%s' already used when authenticating client '%s'.", token.getId(), client.getClientId());
+            logger.warnf("Token '%s' already used when authenticating client '%s'.", token.getId(),
+                    client.getClientId());
             throw new RuntimeException("Token reuse detected");
         }
     }
@@ -251,8 +290,9 @@ public class RelaxedValidationJWTClientValidator {
     public void validateTokenAudience(ClientAuthenticationFlowContext context, RealmModel realm, JsonWebToken token) {
         List<String> expectedAudiences = getExpectedAudiences(context, realm);
         if (!token.hasAnyAudience(expectedAudiences)) {
-            throw new RuntimeException("Token audience doesn't match domain. Expected audiences are any of " + expectedAudiences
-                    + " but audience from token is '" + Arrays.asList(token.getAudience()) + "'");
+            throw new RuntimeException(
+                    "Token audience doesn't match domain. Expected audiences are any of " + expectedAudiences
+                            + " but audience from token is '" + Arrays.asList(token.getAudience()) + "'");
         }
 
         if (!isAllowMultipleAudiencesForJwtClientAuthentication(context) && token.getAudience().length > 1) {
@@ -261,7 +301,8 @@ public class RelaxedValidationJWTClientValidator {
     }
 
     private boolean isAllowMultipleAudiencesForJwtClientAuthentication(ClientAuthenticationFlowContext context) {
-        OIDCLoginProtocol loginProtocol = (OIDCLoginProtocol) context.getSession().getProvider(LoginProtocol.class, OIDCLoginProtocol.LOGIN_PROTOCOL);
+        OIDCLoginProtocol loginProtocol = (OIDCLoginProtocol) context.getSession().getProvider(LoginProtocol.class,
+                OIDCLoginProtocol.LOGIN_PROTOCOL);
         OIDCProviderConfig config = loginProtocol.getConfig();
         return config.isAllowMultipleAudiencesForJwtClientAuthentication();
     }
@@ -269,11 +310,16 @@ public class RelaxedValidationJWTClientValidator {
     private List<String> getExpectedAudiences(ClientAuthenticationFlowContext context, RealmModel realm) {
 
         String issuerUrl = Urls.realmIssuer(context.getUriInfo().getBaseUri(), realm.getName());
-        String tokenUrl = OIDCLoginProtocolService.tokenUrl(context.getUriInfo().getBaseUriBuilder()).build(realm.getName()).toString();
-        String tokenIntrospectUrl = OIDCLoginProtocolService.tokenIntrospectionUrl(context.getUriInfo().getBaseUriBuilder()).build(realm.getName()).toString();
-        String parEndpointUrl = ParEndpoint.parUrl(context.getUriInfo().getBaseUriBuilder()).build(realm.getName()).toString();
-        List<String> expectedAudiences = new ArrayList<>(Arrays.asList(issuerUrl, tokenUrl, tokenIntrospectUrl, parEndpointUrl));
-        String backchannelAuthenticationUrl = CibaGrantType.authorizationUrl(context.getUriInfo().getBaseUriBuilder()).build(realm.getName()).toString();
+        String tokenUrl = OIDCLoginProtocolService.tokenUrl(context.getUriInfo().getBaseUriBuilder())
+                .build(realm.getName()).toString();
+        String tokenIntrospectUrl = OIDCLoginProtocolService
+                .tokenIntrospectionUrl(context.getUriInfo().getBaseUriBuilder()).build(realm.getName()).toString();
+        String parEndpointUrl = ParEndpoint.parUrl(context.getUriInfo().getBaseUriBuilder()).build(realm.getName())
+                .toString();
+        List<String> expectedAudiences = new ArrayList<>(
+                Arrays.asList(issuerUrl, tokenUrl, tokenIntrospectUrl, parEndpointUrl));
+        String backchannelAuthenticationUrl = CibaGrantType.authorizationUrl(context.getUriInfo().getBaseUriBuilder())
+                .build(realm.getName()).toString();
         expectedAudiences.add(backchannelAuthenticationUrl);
 
         return expectedAudiences;
@@ -317,7 +363,8 @@ public class RelaxedValidationJWTClientValidator {
     }
 
     private boolean isVerifyIssuerSubjectMatch() {
-        return Boolean.parseBoolean(client.getAttribute(RelaxedValidationJWTClientAuthenticator.VERIFY_ISSUER_SUBJECT_MATCH));
+        return Boolean
+                .parseBoolean(client.getAttribute(RelaxedValidationJWTClientAuthenticator.VERIFY_ISSUER_SUBJECT_MATCH));
     }
 
 }

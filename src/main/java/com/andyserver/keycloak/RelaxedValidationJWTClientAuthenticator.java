@@ -40,12 +40,15 @@ public class RelaxedValidationJWTClientAuthenticator extends JWTClientAuthentica
     @Override
     public void authenticateClient(ClientAuthenticationFlowContext context) {
         RelaxedValidationJWTClientValidator validator = new RelaxedValidationJWTClientValidator(context, getId());
-        if (!validator.clientAssertionParametersValidation()) return;
+        if (!validator.clientAssertionParametersValidation())
+            return;
 
         try {
             validator.readJws();
-            if (!validator.validateClient()) return;
-            if (!validator.validateSignatureAlgorithm()) return;
+            if (!validator.validateClient())
+                return;
+            if (!validator.validateSignatureAlgorithm())
+                return;
 
             RealmModel realm = validator.getRealm();
             ClientModel client = validator.getClient();
@@ -62,17 +65,19 @@ public class RelaxedValidationJWTClientAuthenticator extends JWTClientAuthentica
 
             boolean signatureValid;
             try {
-                JsonWebToken jwt = context.getSession().tokens().decodeClientJWT(clientAssertion, client, (jose, validatedClient) -> {
-                    DEFAULT_VALIDATOR.accept(jose, validatedClient);
-                    String signatureAlgorithm = jose.getHeader().getRawAlgorithm();
-                    ClientSignatureVerifierProvider signatureProvider = context.getSession().getProvider(ClientSignatureVerifierProvider.class, signatureAlgorithm);
-                    if (signatureProvider == null) {
-                        throw new RuntimeException("Algorithm not supported");
-                    }
-                    if (!signatureProvider.isAsymmetricAlgorithm()) {
-                        throw new RuntimeException("Algorithm is not asymmetric");
-                    }
-                }, JsonWebToken.class);
+                JsonWebToken jwt = context.getSession().tokens().decodeClientJWT(clientAssertion, client,
+                        (jose, validatedClient) -> {
+                            DEFAULT_VALIDATOR.accept(jose, validatedClient);
+                            String signatureAlgorithm = jose.getHeader().getRawAlgorithm();
+                            ClientSignatureVerifierProvider signatureProvider = context.getSession()
+                                    .getProvider(ClientSignatureVerifierProvider.class, signatureAlgorithm);
+                            if (signatureProvider == null) {
+                                throw new RuntimeException("Algorithm not supported");
+                            }
+                            if (!signatureProvider.isAsymmetricAlgorithm()) {
+                                throw new RuntimeException("Algorithm is not asymmetric");
+                            }
+                        }, JsonWebToken.class);
                 signatureValid = jwt != null;
             } catch (RuntimeException e) {
                 Throwable cause = e.getCause() != null ? e.getCause() : e;
@@ -85,17 +90,18 @@ public class RelaxedValidationJWTClientAuthenticator extends JWTClientAuthentica
             validator.validateTokenAudience(context, realm, token);
 
             validator.validateToken();
-            
+
             validator.validateTokenReuse();
 
             context.success();
         } catch (Exception e) {
             ServicesLogger.LOGGER.errorValidatingAssertion(e);
-            Response challengeResponse = ClientAuthUtil.errorResponse(Response.Status.BAD_REQUEST.getStatusCode(), OAuthErrorException.INVALID_CLIENT, "Client authentication with signed JWT failed: " + e.getMessage());
+            Response challengeResponse = ClientAuthUtil.errorResponse(Response.Status.BAD_REQUEST.getStatusCode(),
+                    OAuthErrorException.INVALID_CLIENT,
+                    "Client authentication with signed JWT failed: " + e.getMessage());
             context.failure(AuthenticationFlowError.INVALID_CLIENT_CREDENTIALS, challengeResponse);
         }
     }
-
 
     @Override
     public String getId() {

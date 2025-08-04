@@ -3,7 +3,6 @@ package com.andyserver.keycloak;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -23,7 +22,8 @@ import org.keycloak.provider.ProviderConfigurationBuilder;
 public class RelaxedValidationJWTClientAuthenticationFactory implements ClientAuthenticatorFactory {
 
     public static final String PROVIDER_ID = "relaxed-validation-client-jwt";
-    private static final RelaxedValidationJWTClientAuthenticator SINGLETON = new RelaxedValidationJWTClientAuthenticator(PROVIDER_ID);
+    private static final RelaxedValidationJWTClientAuthenticator SINGLETON = new RelaxedValidationJWTClientAuthenticator(
+            PROVIDER_ID);
 
     @Override
     public ClientAuthenticator create(KeycloakSession session) {
@@ -59,7 +59,8 @@ public class RelaxedValidationJWTClientAuthenticationFactory implements ClientAu
 
     @Override
     public Requirement[] getRequirementChoices() {
-        return REQUIREMENT_CHOICES;    }
+        return REQUIREMENT_CHOICES;
+    }
 
     @Override
     public boolean isUserSetupAllowed() {
@@ -73,20 +74,20 @@ public class RelaxedValidationJWTClientAuthenticationFactory implements ClientAu
 
     @Override
     public List<ProviderConfigProperty> getConfigProperties() {
-		return ProviderConfigurationBuilder.create()
-				.property()
-				.name(RelaxedValidationJWTClientAuthenticator.VERIFY_ISSUER_SUBJECT_MATCH)
-				.type(ProviderConfigProperty.BOOLEAN_TYPE)
-				.label("Verify Issuer and Subject Match")
-				.helpText("Verifies Issuer and Subject of the JWT Match")
-			.add()			
-				.property()
-				.name(RelaxedValidationJWTClientAuthenticator.VERIFY_TOKEN_REUSE)
-				.type(ProviderConfigProperty.BOOLEAN_TYPE)
-				.label("Validate Against Token Reuse")
-				.helpText("Verifies JWT Has Not Been Used by Another Authenticating Client")
-			.add()
-		.build();
+        return ProviderConfigurationBuilder.create()
+                .property()
+                .name(RelaxedValidationJWTClientAuthenticator.VERIFY_ISSUER_SUBJECT_MATCH)
+                .type(ProviderConfigProperty.BOOLEAN_TYPE)
+                .label("Verify Issuer and Subject Match")
+                .helpText("Verifies Issuer and Subject of the JWT Match")
+                .add()
+                .property()
+                .name(RelaxedValidationJWTClientAuthenticator.VERIFY_TOKEN_REUSE)
+                .type(ProviderConfigProperty.BOOLEAN_TYPE)
+                .label("Validate Against Token Reuse")
+                .helpText("Verifies JWT Has Not Been Used by Another Authenticating Client")
+                .add()
+                .build();
     }
 
     @Override
@@ -133,5 +134,4 @@ public class RelaxedValidationJWTClientAuthenticationFactory implements ClientAu
             return Collections.emptySet();
         }
     }
-
 }
